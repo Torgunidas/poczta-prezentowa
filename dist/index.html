@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#234539">
+  <meta name="description" content="Dodaj imiona i wylosujcie, kto komu kupuje świąteczny prezent. Do zabawy wystarczy jeden telefon.">
+  <title>Poczta Prezentowa – świąteczne losowanie</title>
+  <link rel="icon" href="./assets/znaczek.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./assets/fonts/fonts.css">
+  <link rel="stylesheet" href="./style.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <svg class="symbols" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="m3.5 6.5 7.2 5.8a2 2 0 0 0 2.6 0l7.2-5.8M3.5 18l5.8-5M20.5 18l-5.8-5"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 1 1 4.1 1.9c-1.2.8-1.7 1.2-1.7 2.5m0 2.8h.01"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2.2"/><path d="M8 10V7a4 4 0 1 1 8 0v3m-4 4v3"/></symbol>
+    <symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20v-2.2a6 6 0 0 1 12 0V20m-.5-14.8a3 3 0 0 1 0 5.7M21 20v-2.2a5.5 5.5 0 0 0-3.5-5"/></symbol>
+    <symbol id="i-gift" viewBox="0 0 24 24"><rect x="2.5" y="8" width="19" height="4.5" rx="1"/><path d="M4.5 12.5V21h15v-8.5M12 8v13m0-13s-1.5-5-4.1-5a2.5 2.5 0 0 0 0 5Zm0 0s1.5-5 4.1-5a2.5 2.5 0 0 1 0 5Z"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m4 12 5 5L20 6"/></symbol>
+    <symbol id="i-redraw" viewBox="0 0 24 24"><path d="M3.5 10a8.5 8.5 0 0 1 14.6-4l2 2m.4-5.5V8.5H15M20.5 14a8.5 8.5 0 0 1-14.6 4l-2-2m-.4 5.5v-6H9"/></symbol>
+    <symbol id="i-tree" viewBox="0 0 24 24"><path d="m12 2 5 7h-2.3l4.5 6h-3l3.3 4H4.5l3.3-4h-3l4.5-6H7Zm0 17v3"/></symbol>
+  </svg>
+  <div class="airmail" aria-hidden="true"></div>
+  <header class="masthead wrap">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"><svg class="icon"><use href="#i-mail"/></svg></span>
+      <span>Poczta Prezentowa</span>
+    </div>
+    <button class="help-button" type="button" id="help-open"><svg class="icon" aria-hidden="true"><use href="#i-help"/></svg>Zasady losowania</button>
+  </header>
+
+  <main class="wrap">
+    <section class="hero" aria-labelledby="page-title">
+      <div class="hero-copy">
+        <h1 id="page-title">Świąteczne<br><em>losowanie</em><span class="title-star" aria-hidden="true">✦</span></h1>
+        <p>Dodaj imiona i podajcie sobie telefon. Każdy w sekrecie odkryje, komu kupuje prezent.</p>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <span class="spark one">✧</span><span class="spark two">✦</span>
+        <div class="stamp-shadow"><div class="picture-stamp"><img src="./assets/swiateczna-koperta.jpg" width="960" height="640" alt="" fetchpriority="high"></div></div>
+        <svg class="postmark" viewBox="0 0 152 80" fill="none">
+          <g transform="rotate(-9 42 40)" stroke="currentColor" stroke-width="1.5">
+            <circle cx="40" cy="40" r="33"/><circle cx="40" cy="40" r="28"/><circle cx="40" cy="40" r="24.5" stroke-dasharray="1 5.4"/>
+            <path d="m40 21 7 10h-3.6l6.6 8.5h-4.4l6.2 7.8H28.2l6.2-7.8H30l6.6-8.5H33Z" stroke-linejoin="round"/><path d="M40 47v8m-5 0h10"/>
+          </g>
+          <g stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <path d="M68 24c10 7 17 9 30 3s20-6 34 0l14 5M72 34c9 6 15 7 28 1s20-6 34 0l12 4M72 43c10 6 16 7 29 1s20-6 33 0l12 4M70 52c11 7 18 8 31 2s20-6 33 0l12 4"/>
+          </g>
+        </svg>
+      </div>
+    </section>
+
+    <section class="sheet" id="game" aria-label="Losowanie prezentów">
+      <ol class="steps" aria-label="Etapy losowania">
+        <li class="current" aria-current="step"><span class="step-mark">1</span><span>Uczestnicy</span></li>
+        <li><span class="step-mark">2</span><span>Losowanie</span></li>
+        <li><span class="step-mark">3</span><span>Gotowe</span></li>
+      </ol>
+
+      <div id="setup" class="setup-grid">
+        <div class="entry">
+          <h2 id="setup-title" tabindex="-1">Kto bierze udział?</h2>
+          <p class="intro">Do losowania potrzebne są co najmniej dwie osoby.</p>
+          <form id="name-form" novalidate>
+            <label for="person-name">Imię uczestnika</label>
+            <div class="input-row">
+              <input id="person-name" name="participant" type="text" placeholder="np. Kasia" maxlength="60" autocomplete="off" enterkeyhint="done" aria-describedby="name-error">
+              <button type="submit" class="btn add"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Dodaj</button>
+            </div>
+            <p id="name-error" class="error" hidden></p>
+          </form>
+        </div>
+        <section class="roster" aria-labelledby="roster-title">
+          <div class="roster-heading"><h3 id="roster-title"><svg class="icon" aria-hidden="true"><use href="#i-people"/></svg>Lista uczestników</h3><span id="count" aria-label="Liczba uczestników">0</span></div>
+          <div id="empty-roster" class="empty-roster"><svg class="icon" aria-hidden="true"><use href="#i-mail"/></svg><p>Tu pojawią się dodane imiona.</p></div>
+          <ul id="names" class="names" aria-label="Dodane imiona" hidden></ul>
+        </section>
+        <div class="setup-bottom">
+          <p class="privacy"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg>Imiona zostają na tym urządzeniu.</p>
+          <button id="start-round" class="btn primary" type="button" disabled><svg class="icon" aria-hidden="true"><use href="#i-gift"/></svg>Rozpocznij losowanie</button>
+        </div>
+      </div>
+
+      <div id="turn" class="turn-panel" hidden>
+        <div class="turn-top"><span id="turn-count"></span><button class="text-button" id="restart-open" type="button">Przerwij losowanie</button></div>
+        <div class="meter"><span id="meter-fill"></span></div>
+        <div class="slip">
+          <span id="turn-seal" class="seal"><svg class="icon" aria-hidden="true"><use id="turn-icon" href="#i-mail"/></svg></span>
+          <p id="turn-label" class="turn-label"></p>
+          <h2 id="turn-title" tabindex="-1"></h2>
+          <p id="turn-hint" class="turn-hint"></p>
+          <button id="turn-button" class="btn primary" type="button"><svg class="icon" aria-hidden="true"><use id="action-icon" href="#i-mail"/></svg><span id="action-label"></span></button>
+        </div>
+      </div>
+
+      <div id="done" class="done-panel" hidden>
+        <span class="seal completed"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></span>
+        <h2 id="done-title" tabindex="-1">Wszystkie karteczki rozdane!</h2>
+        <p>Każdy już wie, komu kupuje prezent. Wesołych Świąt!</p>
+        <button class="btn primary" id="again" type="button"><svg class="icon" aria-hidden="true"><use href="#i-redraw"/></svg>Nowe losowanie</button>
+      </div>
+      <noscript><p class="no-script">Włącz JavaScript w przeglądarce, aby dodawać imiona i losować prezenty.</p></noscript>
+    </section>
+    <div class="end-mark" aria-hidden="true"><span></span><svg class="icon"><use href="#i-tree"/></svg><span></span></div>
+  </main>
+  <div class="sr-only" aria-live="polite" aria-atomic="true" id="status"></div>
+
+  <dialog id="help-dialog" aria-labelledby="help-title">
+    <div class="dialog-inner">
+      <button type="button" class="icon-button dialog-x" aria-label="Zamknij zasady" data-close><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+      <h2 id="help-title">Zasady losowania</h2>
+      <ol class="rules">
+        <li>Wpisz imiona wszystkich uczestników. Jeśli dwie osoby mają tak samo na imię, dopisz inicjał lub pseudonim.</li>
+        <li>Podaj telefon osobie wskazanej na ekranie. Jeśli wylosuje siebie, może losować ponownie. Po trafieniu na inną osobę jej imię znika z puli odbiorców.</li>
+        <li>Zapamiętaj wynik i ukryj go przed przekazaniem telefonu. Każdy kupuje jeden prezent i każdy zostaje wylosowany dokładnie raz.</li>
+      </ol>
+      <button class="btn primary" data-close type="button">Rozumiem</button>
+    </div>
+  </dialog>
+  <dialog id="restart-dialog" aria-labelledby="restart-title">
+    <div class="dialog-inner">
+      <h2 id="restart-title">Przerwać losowanie?</h2>
+      <p>Dotychczasowe przydziały stracą ważność. Imiona zostaną na liście do kolejnej rundy.</p>
+      <div class="dialog-actions"><button type="button" class="btn primary" data-close>Graj dalej</button><button type="button" class="btn secondary" id="confirm-restart">Wróć do listy</button></div>
+    </div>
+  </dialog>
+</body>
+</html>
