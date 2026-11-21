@@ -13,23 +13,26 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  publish:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Sprawdź losowanie
+        run: node --test tests/draw.test.mjs
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+  deploy:
+    needs: build
     runs-on: ubuntu-latest
     permissions:
-      contents: read
       pages: write
       id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v6
-      - name: Sprawdź losowanie
-        run: node --test tests/draw.test.mjs
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v4
-        with:
-          path: dist
       - name: Opublikuj stronę
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
