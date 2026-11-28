@@ -1,7 +1,21 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { cleanName, nameIssue, newRound, candidates, draw, finishTurn, restoreGame } from "../dist/draw.js";
-import { drawOrder, openInvitation, prepareRound, restoreSession } from "../dist/invitations.js";
+import {
+  createInvitation, drawOrder, openInvitation, openOrganizerSession,
+  organizerFragment, prepareRound, restoreSession
+} from "../dist/invitations.js";
+
+test("sesja organizatora otwiera tylko zaproszenia dla pozostałych osób", async () => {
+  const link = await createInvitation("Ewa", "Karol");
+  const fragment = organizerFragment(["Karol"], [link]);
+  assert.deepEqual(await openOrganizerSession(fragment), {
+    completed: ["Karol"],
+    invitations: [{ giver: "Ewa", link }]
+  });
+  assert.equal(await openOrganizerSession(organizerFragment(["Ewa"], [link])), null);
+  assert.equal(await openOrganizerSession(fragment.slice(0, -2)), null);
+});
 
 test("osoby na telefonie i pod linkami losują z jednej puli", async () => {
   const names = ["Łucja", "Kasia", "Jaś", "Mikołaj", "Marta"];

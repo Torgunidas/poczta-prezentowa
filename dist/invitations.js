@@ -1,6 +1,7 @@
 import { cleanName, draw, finishTurn, nameIssue, newRound, restoreGame } from "./draw.js";
 
 export const invitationPrefix = "#losowanie=";
+export const organizerPrefix = "#sesja=";
 const invitationPattern = /^#losowanie=1\.([A-Za-z0-9_-]{22})\.([A-Za-z0-9_-]{16})\.([A-Za-z0-9_-]{28,1024})$/;
 
 function encode(bytes) {
@@ -13,7 +14,7 @@ function decode(value) {
   return bytes;
 }
 
-async function createInvitation(giver, recipient) {
+export async function createInvitation(giver, recipient) {
   const secret = crypto.getRandomValues(new Uint8Array(16));
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const key = await crypto.subtle.importKey("raw", secret, "AES-GCM", false, ["encrypt"]);
@@ -38,6 +39,35 @@ export async function openInvitation(fragment) {
   } catch {
     return null;
   }
+}
+
+export function organizerFragment(completed, invitations) {
+  const names = encode(new TextEncoder().encode(JSON.stringify(completed)));
+  return organizerPrefix + ["1", names, ...invitations.map(link => link.slice(invitationPrefix.length))].join("~");
+}
+
+export async function openOrganizerSession(fragment) {
+  if (!fragment.startsWith(organizerPrefix) || fragment.length > 24000) return null;
+  const [version, names, ...tokens] = fragment.slice(organizerPrefix.length).split("~");
+  if (version !== "1" || !names || tokens.length === 0) return null;
+
+  let completed;
+  try { completed = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(decode(names))); }
+  catch { return null; }
+  if (!Array.isArray(completed) || !completed.every(name =>
+    typeof name === "string" && cleanName(name) === name && !nameIssue([], name)
+  )) return null;
+
+  const links = tokens.map(token => invitationPrefix + token);
+  const pairs = await Promise.all(links.map(openInvitation));
+  if (pairs.some(pair => pair === null)) return null;
+  const givers = [...completed, ...pairs.map(pair => pair.giver)];
+  const unique = new Set(givers.map(name => name.toLocaleLowerCase("pl")));
+  const recipients = new Set(pairs.map(pair => pair.recipient));
+  if (unique.size !== givers.length || recipients.size !== links.length ||
+      pairs.some(pair => !givers.includes(pair.recipient))) return null;
+
+  return { completed, invitations: pairs.map(({ giver }, index) => ({ giver, link: links[index] })) };
 }
 
 export function drawOrder(names, absent) {

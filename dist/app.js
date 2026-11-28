@@ -1,5 +1,8 @@
 import { cleanName, nameIssue, draw, finishTurn } from "./draw.js";
-import { drawOrder, invitationPrefix, openInvitation, prepareRound, restoreSession } from "./invitations.js";
+import {
+  drawOrder, invitationPrefix, openInvitation, openOrganizerSession,
+  organizerPrefix, prepareRound, restoreSession
+} from "./invitations.js";
 
 const byId = id => document.getElementById(id);
 const input = byId("person-name");
@@ -8,9 +11,10 @@ const turnButton = byId("turn-button");
 const key = "poczta-prezentowa:sesja:v1";
 const fragment = window.location.hash;
 const guestMode = fragment.startsWith(invitationPrefix);
+const organizerMode = fragment.startsWith(organizerPrefix);
 let game;
 try {
-  game = restoreSession(guestMode ? null : sessionStorage.getItem(key));
+  game = restoreSession(guestMode || organizerMode ? null : sessionStorage.getItem(key));
 } catch {
   game = restoreSession(null);
 }
@@ -385,9 +389,32 @@ async function showInvitation() {
   title.focus();
 }
 
+async function showOrganizerSession() {
+  for (const id of ["hero", "steps", "help-open", "setup", "links-continue"]) byId(id).hidden = true;
+  byId("game").classList.add("guest-sheet");
+  const title = byId("links-title");
+  const hint = byId("links-hint");
+  title.textContent = "Sesja organizatora";
+  hint.textContent = "Wczytujemy linki…";
+  byId("links").hidden = false;
+  const session = await openOrganizerSession(fragment);
+  if (!session) {
+    hint.textContent = "Nie udało się wczytać sesji. Sprawdź, czy adres został skopiowany w całości.";
+  } else {
+    hint.textContent = "Zachowaj adres tej sesji dla siebie. Każdej osobie wyślij tylko jej link.";
+    byId("invitation-list").replaceChildren(...session.invitations.map(({ giver, link }) => invitationRow(giver, link)));
+    const completed = byId("completed-givers");
+    completed.textContent = "Wyniki zapisane wcześniej: " + session.completed.join(", ") + ".";
+    completed.hidden = session.completed.length === 0;
+  }
+  title.focus();
+}
+
 window.addEventListener("hashchange", () => {
-  if (guestMode || window.location.hash.startsWith(invitationPrefix)) window.location.reload();
+  if (guestMode || organizerMode || window.location.hash.startsWith(invitationPrefix) ||
+      window.location.hash.startsWith(organizerPrefix)) window.location.reload();
 });
 
 if (guestMode) showInvitation();
+else if (organizerMode) showOrganizerSession();
 else render();
