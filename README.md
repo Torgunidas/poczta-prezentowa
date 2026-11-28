@@ -2,9 +2,11 @@
 
 [Otwórz aplikację](https://torgunidas.github.io/poczta-prezentowa/)
 
-Świąteczne losowanie prezentów na jednym telefonie. Wpisz co najmniej dwa imiona i przekazuj telefon osobie wskazanej na ekranie. Trafienie na siebie pozwala losować ponownie. Każdy poprawny wynik usuwa odbiorcę z puli, a ostatnia osoba zawsze ma dla kogo kupić prezent.
+Świąteczne losowanie prezentów na wspólnym telefonie i przez linki. Wpisz co najmniej dwa imiona i oznacz osoby, których nie ma na miejscu. Po rozpoczęciu losowania skopiuj link każdej nieobecnej osoby i wyślij go tylko jej. Może odkryć swój wynik na własnym urządzeniu bez logowania.
 
-Przebieg rundy jest zapisywany w pamięci sesji przeglądarki. Po odświeżeniu uczestnik może odsłonić ten sam wynik. Imiona i przydziały pozostają na urządzeniu.
+Obecni przekazują telefon osobie wskazanej na ekranie. Trafienie na siebie pozwala losować ponownie. Przydziały z linków i z telefonu korzystają z jednej puli. Każdy kupuje jeden prezent i każdy zostaje wylosowany dokładnie raz.
+
+Przebieg rundy jest zapisywany w sesji przeglądarki organizatora. Link zawiera zaszyfrowany wynik jednej osoby w części adresu po znaku `#`. Każdy, kto otrzyma link, może otworzyć przypisaną do niego kopertę. Po rozpoczęciu nowej rundy poprzednie linki nadal prowadzą do poprzednich wyników. Generowanie linków wymaga HTTPS lub lokalnego adresu `localhost`.
 
 ## Uruchomienie lokalne
 

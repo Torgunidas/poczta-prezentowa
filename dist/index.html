@@ -4,7 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#234539">
-  <meta name="description" content="Dodaj imiona i wylosujcie, kto komu kupuje świąteczny prezent. Do zabawy wystarczy jeden telefon.">
+  <meta name="description" content="Wylosujcie, kto komu kupuje świąteczny prezent. Losujcie na wspólnym telefonie i wyślijcie osobne linki nieobecnym.">
+  <meta name="referrer" content="no-referrer">
   <title>Poczta Prezentowa – świąteczne losowanie</title>
   <link rel="icon" href="./assets/znaczek.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./assets/fonts/fonts.css">
@@ -34,10 +35,10 @@
   </header>
 
   <main class="wrap">
-    <section class="hero" aria-labelledby="page-title">
+    <section class="hero" id="hero" aria-labelledby="page-title">
       <div class="hero-copy">
         <h1 id="page-title">Świąteczne<br><em>losowanie</em><span class="title-star" aria-hidden="true">✦</span></h1>
-        <p>Dodaj imiona i podajcie sobie telefon. Każdy w sekrecie odkryje, komu kupuje prezent.</p>
+        <p>Losujcie na wspólnym telefonie. Osobom nieobecnym wyślijcie linki, żeby mogły odkryć swoje wyniki.</p>
       </div>
       <div class="hero-art" aria-hidden="true">
         <span class="spark one">✧</span><span class="spark two">✦</span>
@@ -55,7 +56,7 @@
     </section>
 
     <section class="sheet" id="game" aria-label="Losowanie prezentów">
-      <ol class="steps" aria-label="Etapy losowania">
+      <ol class="steps" id="steps" aria-label="Etapy losowania">
         <li class="current" aria-current="step"><span class="step-mark">1</span><span>Uczestnicy</span></li>
         <li><span class="step-mark">2</span><span>Losowanie</span></li>
         <li><span class="step-mark">3</span><span>Gotowe</span></li>
@@ -69,7 +70,7 @@
             <label for="person-name">Imię uczestnika</label>
             <div class="input-row">
               <input id="person-name" name="participant" type="text" placeholder="np. Kasia" maxlength="60" autocomplete="off" enterkeyhint="done" aria-describedby="name-error">
-              <button type="submit" class="btn add"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Dodaj</button>
+              <button id="add-person" type="submit" class="btn add"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Dodaj</button>
             </div>
             <p id="name-error" class="error" hidden></p>
           </form>
@@ -77,18 +78,32 @@
         <section class="roster" aria-labelledby="roster-title">
           <div class="roster-heading"><h3 id="roster-title"><svg class="icon" aria-hidden="true"><use href="#i-people"/></svg>Lista uczestników</h3><span id="count" aria-label="Liczba uczestników">0</span></div>
           <div id="empty-roster" class="empty-roster"><svg class="icon" aria-hidden="true"><use href="#i-mail"/></svg><p>Tu pojawią się dodane imiona.</p></div>
+          <p id="absence-hint" class="absence-hint" hidden>Zaznacz osoby, którym chcesz wysłać link.</p>
           <ul id="names" class="names" aria-label="Dodane imiona" hidden></ul>
         </section>
         <div class="setup-bottom">
-          <p class="privacy"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg>Imiona zostają na tym urządzeniu.</p>
-          <button id="start-round" class="btn primary" type="button" disabled><svg class="icon" aria-hidden="true"><use href="#i-gift"/></svg>Rozpocznij losowanie</button>
+          <p class="privacy"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg>Imiona i wyniki nie są zapisywane na serwerze.</p>
+          <button id="start-round" class="btn primary" type="button" disabled><svg class="icon" aria-hidden="true"><use href="#i-gift"/></svg><span id="start-label">Rozpocznij losowanie</span></button>
         </div>
+        <p id="setup-error" class="error round-error" role="alert" hidden></p>
+      </div>
+
+      <div id="links" class="links-panel" hidden>
+        <div class="links-heading">
+          <span class="seal"><svg class="icon" aria-hidden="true"><use href="#i-mail"/></svg></span>
+          <div>
+            <h2 id="links-title" tabindex="-1">Linki dla nieobecnych</h2>
+            <p>Każdy link otwiera wynik jednej osoby. Wyślij go tylko jej.</p>
+          </div>
+        </div>
+        <ul id="invitation-list" class="invitation-list" aria-label="Linki uczestników"></ul>
+        <button id="links-continue" class="btn primary" type="button">Gotowe</button>
       </div>
 
       <div id="turn" class="turn-panel" hidden>
         <div class="turn-top"><span id="turn-count"></span><button class="text-button" id="restart-open" type="button">Przerwij losowanie</button></div>
         <div class="meter"><span id="meter-fill"></span></div>
-        <div class="slip">
+        <div id="local-slip" class="slip">
           <span id="turn-seal" class="seal"><svg class="icon" aria-hidden="true"><use id="turn-icon" href="#i-mail"/></svg></span>
           <p id="turn-label" class="turn-label"></p>
           <h2 id="turn-title" tabindex="-1"></h2>
@@ -100,8 +115,22 @@
       <div id="done" class="done-panel" hidden>
         <span class="seal completed"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></span>
         <h2 id="done-title" tabindex="-1">Wszystkie karteczki rozdane!</h2>
-        <p>Każdy już wie, komu kupuje prezent. Wesołych Świąt!</p>
-        <button class="btn primary" id="again" type="button"><svg class="icon" aria-hidden="true"><use href="#i-redraw"/></svg>Nowe losowanie</button>
+        <p id="done-hint">Każdy już wie, komu kupuje prezent. Wesołych Świąt!</p>
+        <div class="done-actions">
+          <button class="btn secondary" id="show-links" type="button" hidden><svg class="icon" aria-hidden="true"><use href="#i-mail"/></svg>Pokaż linki</button>
+          <button class="btn primary" id="again" type="button"><svg class="icon" aria-hidden="true"><use href="#i-redraw"/></svg>Nowe losowanie</button>
+        </div>
+      </div>
+
+      <div id="guest" class="guest-panel" hidden>
+        <div class="slip" id="guest-slip">
+          <span id="guest-seal" class="seal"><svg class="icon" aria-hidden="true"><use id="guest-icon" href="#i-mail"/></svg></span>
+          <p id="guest-label" class="turn-label"></p>
+          <h1 id="guest-title" tabindex="-1">Otwieramy kopertę…</h1>
+          <p id="guest-hint" class="turn-hint"></p>
+          <button id="guest-button" class="btn primary" type="button" hidden><svg class="icon" aria-hidden="true"><use id="guest-action-icon" href="#i-mail"/></svg><span id="guest-action"></span></button>
+          <a class="text-button" id="guest-home" href="./" hidden>Wróć do strony głównej</a>
+        </div>
       </div>
       <noscript><p class="no-script">Włącz JavaScript w przeglądarce, aby dodawać imiona i losować prezenty.</p></noscript>
     </section>
@@ -114,7 +143,8 @@
       <button type="button" class="icon-button dialog-x" aria-label="Zamknij zasady" data-close><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
       <h2 id="help-title">Zasady losowania</h2>
       <ol class="rules">
-        <li>Wpisz imiona wszystkich uczestników. Jeśli dwie osoby mają tak samo na imię, dopisz inicjał lub pseudonim.</li>
+        <li>Wpisz imiona wszystkich uczestników i zaznacz, kogo nie ma na miejscu. Jeśli dwie osoby mają tak samo na imię, dopisz inicjał lub pseudonim.</li>
+        <li>Po rozpoczęciu losowania skopiuj link każdej nieobecnej osoby i wyślij go tylko jej. Z linku może odsłonić wynik bez logowania.</li>
         <li>Podaj telefon osobie wskazanej na ekranie. Jeśli wylosuje siebie, może losować ponownie. Po trafieniu na inną osobę jej imię znika z puli odbiorców.</li>
         <li>Zapamiętaj wynik i ukryj go przed przekazaniem telefonu. Każdy kupuje jeden prezent i każdy zostaje wylosowany dokładnie raz.</li>
       </ol>
@@ -124,7 +154,7 @@
   <dialog id="restart-dialog" aria-labelledby="restart-title">
     <div class="dialog-inner">
       <h2 id="restart-title">Przerwać losowanie?</h2>
-      <p>Dotychczasowe przydziały stracą ważność. Imiona zostaną na liście do kolejnej rundy.</p>
+      <p id="restart-hint"></p>
       <div class="dialog-actions"><button type="button" class="btn primary" data-close>Graj dalej</button><button type="button" class="btn secondary" id="confirm-restart">Wróć do listy</button></div>
     </div>
   </dialog>

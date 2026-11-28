@@ -1,6 +1,52 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { cleanName, nameIssue, newRound, candidates, draw, finishTurn, restoreGame } from "../dist/draw.js";
+import { drawOrder, openInvitation, prepareRound, restoreSession } from "../dist/invitations.js";
+
+test("osoby na telefonie i pod linkami losują z jednej puli", async () => {
+  const names = ["Łucja", "Kasia", "Jaś", "Mikołaj", "Marta"];
+  const absent = ["Kasia", "Mikołaj"];
+  const participants = drawOrder(names, absent);
+  const { round, invitations } = await prepareRound(names, absent);
+  assert.equal(round.turn, absent.length);
+  assert.deepEqual(restoreSession(JSON.stringify({ names, absent, round, invitations, linksPending: true })), {
+    names, absent, round, invitations, linksPending: true
+  });
+  assert.equal(restoreSession(JSON.stringify({ names, absent, round, invitations: [] })).round, null);
+
+  const pairs = await Promise.all(invitations.map(openInvitation));
+  assert.deepEqual(pairs.map(pair => pair.giver), absent);
+  for (let next = round; next.turn < names.length; next = finishTurn(next)) {
+    next = draw(next);
+    if (next.retry) next = draw(next);
+    pairs.push({ giver: participants[next.turn], recipient: participants[next.recipient] });
+  }
+  assert.ok(pairs.every(pair => pair.giver !== pair.recipient));
+  assert.deepEqual(new Set(pairs.map(pair => pair.recipient)), new Set(names));
+});
+
+test("link otwiera ten sam wynik po ponownym wejściu, a uszkodzony link jest odrzucany", async () => {
+  const names = ["Żaneta W.".repeat(6), "Łukasz"];
+  const { round, invitations: [first, second] } = await prepareRound(names, names);
+  assert.equal(round.turn, names.length);
+  const firstResult = await openInvitation(first);
+  assert.deepEqual(firstResult, { giver: names[0], recipient: names[1] });
+  assert.deepEqual(await openInvitation(first), firstResult);
+  assert.deepEqual(await openInvitation(second), { giver: names[1], recipient: names[0] });
+  const [version, key, iv, data] = first.split(".");
+  const changed = (data.startsWith("A") ? "B" : "A") + data.slice(1);
+  assert.equal(await openInvitation([version, key, iv, changed].join(".")), null);
+  assert.equal(await openInvitation("#losowanie=1.niekompletny"), null);
+});
+
+test("runda bez nieobecnych odtwarza sesje zapisane przed dodaniem linków", async () => {
+  const names = ["Jan", "Anna"];
+  const round = newRound(names);
+  assert.deepEqual(await prepareRound(names, []), { round, invitations: [] });
+  assert.deepEqual(restoreSession(JSON.stringify({ names, round })), {
+    names, round, absent: [], invitations: [], linksPending: false
+  });
+});
 
 test("imiona są oczyszczane, a dwie osoby o tym samym imieniu można rozróżnić", () => {
   const name = cleanName("   Z\u0307aneta   K.  ");

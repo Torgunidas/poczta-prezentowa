@@ -1,17 +1,21 @@
-import { cleanName, nameIssue, newRound, draw, finishTurn, restoreGame } from "./draw.js";
+import { cleanName, nameIssue, draw, finishTurn } from "./draw.js";
+import { drawOrder, invitationPrefix, openInvitation, prepareRound, restoreSession } from "./invitations.js";
 
 const byId = id => document.getElementById(id);
 const input = byId("person-name");
 const startButton = byId("start-round");
 const turnButton = byId("turn-button");
 const key = "poczta-prezentowa:sesja:v1";
+const fragment = window.location.hash;
+const guestMode = fragment.startsWith(invitationPrefix);
 let game;
 try {
-  game = restoreGame(sessionStorage.getItem(key));
+  game = restoreSession(guestMode ? null : sessionStorage.getItem(key));
 } catch {
-  game = restoreGame(null);
+  game = restoreSession(null);
 }
 let revealed = false;
+let preparing = false;
 
 function save() {
   // The current round also works in memory if a browser disables session storage.
@@ -30,24 +34,39 @@ function icon(id) {
 
 function renderNames() {
   const list = byId("names");
+  const absent = new Set(game.absent);
   const items = game.names.map((name, index) => {
     const li = document.createElement("li");
     const text = document.createElement("span");
     text.textContent = name;
+    const option = document.createElement("label");
+    option.className = "absence-option";
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = absent.has(name);
+    checkbox.disabled = preparing;
+    checkbox.dataset.index = String(index);
+    checkbox.setAttribute("aria-label", "Nieobecny: " + name);
+    option.append(checkbox, "Nieobecny");
     const remove = document.createElement("button");
     remove.type = "button";
     remove.className = "remove";
+    remove.disabled = preparing;
     remove.setAttribute("aria-label", "Usuń z listy " + name);
     remove.dataset.index = String(index);
     remove.append(icon("i-x"));
-    li.append(text, remove);
+    li.append(text, option, remove);
     return li;
   });
   list.replaceChildren(...items);
   list.hidden = items.length === 0;
   byId("empty-roster").hidden = items.length > 0;
+  byId("absence-hint").hidden = items.length === 0;
   byId("count").textContent = String(items.length);
-  startButton.disabled = items.length < 2;
+  input.disabled = preparing;
+  byId("add-person").disabled = preparing;
+  startButton.disabled = preparing || items.length < 2;
+  byId("start-label").textContent = preparing ? "Przygotowujemy koperty…" : "Rozpocznij losowanie";
 }
 
 function setError(message = "") {
@@ -67,19 +86,20 @@ function addInput() {
   }
   game.names.push(name);
   input.value = "";
+  byId("setup-error").hidden = true;
   save();
   renderNames();
   byId("status").textContent = "Dodano " + name + ".";
   return true;
 }
 
-function turnView() {
+function turnView(participants) {
   const round = game.round;
-  const giver = game.names[round.turn];
+  const giver = participants[round.turn];
   if (round.recipient !== null && revealed) {
-    const last = round.turn === game.names.length - 1;
+    const last = round.turn === participants.length - 1;
     return {
-      label: "Twój prezent dostanie", title: game.names[round.recipient],
+      label: "Twój prezent dostanie", title: participants[round.recipient],
       hint: last ? "Zapamiętaj imię i zakończ losowanie." : "Zapamiętaj imię, a potem ukryj karteczkę.",
       seal: "i-gift", action: last ? "Ukryj i zakończ" : "Ukryj i przekaż telefon", actionIcon: "i-lock"
     };
@@ -100,10 +120,12 @@ function turnView() {
 
 function renderTurn() {
   const round = game.round;
-  const view = turnView();
+  const view = turnView(drawOrder(game.names, game.absent));
   const showing = round.recipient !== null && revealed;
-  byId("turn-count").textContent = "Osoba " + (round.turn + 1) + " z " + game.names.length;
-  byId("meter-fill").style.width = (100 * (round.turn + 1) / game.names.length) + "%";
+  const person = round.turn - game.absent.length + 1;
+  const present = game.names.length - game.absent.length;
+  byId("turn-count").textContent = "Osoba " + person + " z " + present;
+  byId("meter-fill").style.width = (100 * person / present) + "%";
   byId("turn-label").textContent = view.label;
   byId("turn-title").textContent = view.title;
   byId("turn-hint").textContent = view.hint;
@@ -111,13 +133,67 @@ function renderTurn() {
   byId("turn-icon").setAttribute("href", "#" + view.seal);
   byId("action-icon").setAttribute("href", "#" + view.actionIcon);
   byId("turn-seal").classList.toggle("revealed", showing);
-  document.querySelector(".slip").classList.toggle("revealed", showing);
+  byId("local-slip").classList.toggle("revealed", showing);
+}
+
+function invitationUrl(fragment) {
+  const page = window.location.hostname.endsWith(".chatgpt.site")
+    ? "https://torgunidas.github.io/poczta-prezentowa/"
+    : window.location.href;
+  const url = new URL(page);
+  url.search = "";
+  url.hash = fragment;
+  return url.href;
+}
+
+function invitationRow(name, fragment) {
+  const item = document.createElement("li");
+  const label = document.createElement("span");
+  label.textContent = name;
+  const copy = document.createElement("button");
+  copy.type = "button";
+  copy.className = "btn secondary";
+  copy.textContent = "Kopiuj link";
+  copy.setAttribute("aria-label", "Kopiuj link dla " + name);
+  const field = document.createElement("input");
+  field.type = "text";
+  field.readOnly = true;
+  field.hidden = true;
+  field.setAttribute("aria-label", "Link dla " + name);
+  const url = invitationUrl(fragment);
+
+  copy.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      field.hidden = true;
+      field.value = "";
+      copy.textContent = "Skopiowano";
+      byId("status").textContent = "Skopiowano link dla " + name + ".";
+    } catch {
+      field.value = url;
+      field.hidden = false;
+      field.focus();
+      field.select();
+      byId("status").textContent = "Skopiuj zaznaczony link dla " + name + ".";
+    }
+  });
+  item.append(label, copy, field);
+  return item;
+}
+
+function renderInvitations() {
+  byId("invitation-list").replaceChildren(...game.absent.map((name, index) =>
+    invitationRow(name, game.invitations[index])
+  ));
+  byId("links-continue").textContent = game.round.turn === game.names.length
+    ? "Gotowe"
+    : "Przejdź do losowania na telefonie";
 }
 
 function render(focus = false) {
-  const phase = !game.round ? 0 : game.round.turn < game.names.length ? 1 : 2;
-  const panels = ["setup", "turn", "done"];
-  panels.forEach((id, index) => { byId(id).hidden = index !== phase; });
+  const phase = !game.round ? 0 : game.round.turn < game.names.length || game.linksPending ? 1 : 2;
+  const panel = ["setup", game.linksPending ? "links" : "turn", "done"][phase];
+  for (const id of ["setup", "links", "turn", "done"]) byId(id).hidden = id !== panel;
   document.querySelectorAll(".steps li").forEach((step, index) => {
     step.classList.toggle("current", index === phase);
     step.classList.toggle("past", index < phase);
@@ -125,16 +201,28 @@ function render(focus = false) {
     else step.removeAttribute("aria-current");
     step.firstElementChild.textContent = index < phase ? "✓" : String(index + 1);
   });
-  if (phase === 0) renderNames();
-  if (phase === 1) renderTurn();
+  if (panel === "setup") renderNames();
+  if (panel === "links") renderInvitations();
+  else byId("invitation-list").replaceChildren();
+  if (panel === "turn") renderTurn();
   else byId("turn-title").textContent = "";
-  if (focus) byId(panels[phase] + "-title").focus();
+  if (panel === "done") {
+    const hasLinks = game.invitations.length > 0;
+    byId("show-links").hidden = !hasLinks;
+    byId("done-hint").textContent = hasLinks
+      ? "Osoby nieobecne mogą odkryć swój wynik z otrzymanego linku."
+      : "Każdy już wie, komu kupuje prezent. Wesołych Świąt!";
+  }
+  if (focus) byId(panel + "-title").focus();
 }
 
 function backToList() {
   game.round = null;
+  game.invitations = [];
+  game.linksPending = false;
   revealed = false;
   setError();
+  byId("setup-error").hidden = true;
   byId("status").textContent = "";
   save();
   render(true);
@@ -142,27 +230,67 @@ function backToList() {
 
 byId("name-form").addEventListener("submit", event => {
   event.preventDefault();
-  if (!game.round && addInput()) input.focus();
+  if (!game.round && !preparing && addInput()) input.focus();
 });
 input.addEventListener("input", () => setError());
+byId("names").addEventListener("change", event => {
+  const checkbox = event.target.closest("input[data-index]");
+  if (!checkbox || game.round || preparing) return;
+  const name = game.names[Number(checkbox.dataset.index)];
+  const absent = new Set(game.absent);
+  if (checkbox.checked) absent.add(name);
+  else absent.delete(name);
+  game.absent = game.names.filter(name => absent.has(name));
+  byId("setup-error").hidden = true;
+  save();
+});
 byId("names").addEventListener("click", event => {
   const button = event.target.closest("button[data-index]");
-  if (!button || game.round) return;
+  if (!button || game.round || preparing) return;
   const index = Number(button.dataset.index);
   const [name] = game.names.splice(index, 1);
+  game.absent = game.absent.filter(person => person !== name);
   setError();
+  byId("setup-error").hidden = true;
   save();
   renderNames();
   byId("status").textContent = "Usunięto " + name + ".";
   const buttons = byId("names").querySelectorAll("button");
   (buttons[Math.min(index, buttons.length - 1)] ?? input).focus();
 });
-startButton.addEventListener("click", () => {
-  if (game.round || game.names.length < 2) return;
+startButton.addEventListener("click", async () => {
+  if (game.round || preparing || game.names.length < 2) return;
   if (input.value.trim() && !addInput()) return;
   input.value = "";
-  game.round = newRound(game.names);
+  const error = byId("setup-error");
+  error.hidden = true;
+  preparing = true;
+  renderNames();
+  try {
+    const { round, invitations } = await prepareRound(game.names, game.absent);
+    game.round = round;
+    game.invitations = invitations;
+    game.linksPending = invitations.length > 0;
+    save();
+  } catch {
+    error.textContent = "Nie udało się przygotować kopert. Spróbuj ponownie w aktualnej przeglądarce.";
+    error.hidden = false;
+  } finally {
+    preparing = false;
+  }
   byId("status").textContent = "";
+  render(Boolean(game.round));
+  if (!game.round) startButton.focus();
+});
+
+byId("links-continue").addEventListener("click", () => {
+  game.linksPending = false;
+  byId("status").textContent = "";
+  save();
+  render(true);
+});
+byId("show-links").addEventListener("click", () => {
+  game.linksPending = true;
   save();
   render(true);
 });
@@ -193,7 +321,12 @@ window.addEventListener("pagehide", coverResult);
 
 byId("again").addEventListener("click", backToList);
 byId("help-open").addEventListener("click", () => byId("help-dialog").showModal());
-byId("restart-open").addEventListener("click", () => byId("restart-dialog").showModal());
+byId("restart-open").addEventListener("click", () => {
+  byId("restart-hint").textContent = game.invitations.length
+    ? "Wysłane linki nadal otworzą poprzedni wynik. Jeśli zaczniesz od nowa, wyślij uczestnikom nowe linki."
+    : "Dotychczasowe przydziały stracą ważność. Imiona zostaną na liście do kolejnej rundy.";
+  byId("restart-dialog").showModal();
+});
 byId("confirm-restart").addEventListener("click", () => {
   byId("restart-dialog").close();
   backToList();
@@ -204,4 +337,57 @@ document.querySelectorAll("dialog").forEach(dialog => {
   });
 });
 
-render();
+async function showInvitation() {
+  for (const id of ["hero", "steps", "help-open", "setup"]) byId(id).hidden = true;
+  byId("game").classList.add("guest-sheet");
+  byId("guest").hidden = false;
+
+  const guest = await openInvitation(fragment);
+  const title = byId("guest-title");
+  const hint = byId("guest-hint");
+  const button = byId("guest-button");
+  if (!guest) {
+    title.textContent = "Nie udało się otworzyć koperty";
+    hint.textContent = "Poproś organizatora o ponowne wysłanie linku.";
+    byId("guest-home").hidden = false;
+    title.focus();
+    return;
+  }
+
+  let showing = false;
+  function renderGuest() {
+    byId("guest-label").textContent = showing ? "Twój prezent dostanie" : "Koperta dla";
+    title.textContent = showing ? guest.recipient : guest.giver;
+    hint.textContent = showing ? "Po zapamiętaniu imienia możesz ukryć wynik." : "Otwórz kopertę, żeby zobaczyć, komu kupujesz prezent.";
+    byId("guest-action").textContent = showing ? "Ukryj wynik" : "Odkryj mój wynik";
+    byId("guest-icon").setAttribute("href", showing ? "#i-gift" : "#i-mail");
+    byId("guest-action-icon").setAttribute("href", showing ? "#i-lock" : "#i-mail");
+    byId("guest-seal").classList.toggle("revealed", showing);
+    byId("guest-slip").classList.toggle("revealed", showing);
+  }
+
+  function coverGuest() {
+    if (!showing) return;
+    showing = false;
+    renderGuest();
+  }
+
+  button.addEventListener("click", event => {
+    if (event.detail > 1) return;
+    showing = !showing;
+    renderGuest();
+    title.focus();
+  });
+  document.addEventListener("visibilitychange", () => { if (document.hidden) coverGuest(); });
+  window.addEventListener("pagehide", coverGuest);
+  button.hidden = false;
+  renderGuest();
+  title.focus();
+}
+
+window.addEventListener("hashchange", () => {
+  if (guestMode || window.location.hash.startsWith(invitationPrefix)) window.location.reload();
+});
+
+if (guestMode) showInvitation();
+else render();

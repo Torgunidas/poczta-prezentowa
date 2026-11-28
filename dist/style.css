@@ -30,7 +30,7 @@ button { cursor: pointer; }
 button:disabled { cursor: not-allowed; }
 button, input { -webkit-tap-highlight-color: transparent; }
 :focus-visible { outline: 3px solid #976418; outline-offset: 4px; }
-h2[tabindex="-1"]:focus { outline: none; }
+:is(h1, h2)[tabindex="-1"]:focus { outline: none; }
 button { transition: background-color .15s, border-color .15s, box-shadow .15s; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .symbols { position: absolute; width: 0; height: 0; overflow: hidden; }
@@ -106,20 +106,34 @@ input[aria-invalid="true"] { border-color: var(--berry); }
 .empty-roster { min-height: 6.1rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .35rem; text-align: center; color: #596657; }
 .empty-roster .icon { width: 1.85rem; height: 1.85rem; color: #768670; transform: rotate(-9deg); stroke-width: 1.25; }
 .empty-roster p { font-size: .89rem; }
-.names { list-style: none; display: flex; align-content: flex-start; flex-wrap: wrap; gap: .42rem; max-height: 12rem; overflow-y: auto; margin: 0 -.15rem; padding: .78rem .15rem .2rem; }
-.names li { min-width: 0; max-width: 100%; display: inline-flex; align-items: center; gap: .28rem; padding-left: .64rem; background: #fffdf7; border: 1px solid #cbd4c2; border-radius: .42rem; color: var(--pine); font-size: .91rem; font-weight: 550; }
+.absence-hint { margin-top: .65rem; color: var(--muted); font-size: .89rem; }
+.names { list-style: none; display: grid; gap: .42rem; max-height: 12rem; overflow-y: auto; margin: 0 -.15rem; padding: .55rem .15rem .2rem; }
+.names li { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: .42rem; padding-left: .64rem; background: #fffdf7; border: 1px solid #cbd4c2; border-radius: .42rem; color: var(--pine); font-size: .91rem; font-weight: 550; }
 .names li span { overflow-wrap: anywhere; }
+.absence-option { display: inline-flex; align-items: center; gap: .35rem; min-height: 2.45rem; margin: 0; font-size: .89rem; cursor: pointer; }
+.absence-option input { width: 1rem; min-height: 1rem; margin: 0; padding: 0; accent-color: var(--pine); cursor: pointer; }
 .remove { flex: none; width: 2rem; min-height: 2.1rem; border: 0; background: transparent; color: #697768; }
 .remove:hover { color: var(--berry); background: #f5e9dd; }
 .remove .icon { width: .9rem; height: .9rem; vertical-align: middle; }
 .setup-bottom { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; gap: 1rem; border-top: 1px dashed var(--line); padding-top: 1.12rem; }
 .privacy { display: flex; align-items: center; gap: .5rem; color: #5b665d; font-size: .89rem; }
 .privacy .icon { width: 1rem; height: 1rem; }
+.round-error { grid-column: 1 / -1; margin: 0; }
 .end-mark { display: flex; align-items: center; justify-content: center; gap: .7rem; padding: 1.65rem 0 1.9rem; color: #8a977d; }
 .end-mark span { width: 2.4rem; height: 1px; background: #d6d7c8; }
 .end-mark .icon { width: 1.1rem; height: 1.1rem; stroke-width: 1.4; }
 
-.turn-panel { padding: 1.25rem 2.05rem 1.75rem; }
+.turn-panel, .links-panel, .guest-panel { padding: 1.25rem 2.05rem 1.75rem; }
+.links-heading { display: flex; align-items: flex-start; gap: 1rem; }
+.links-heading h2 { font-size: clamp(1.8rem, 3.1vw, 2.15rem); }
+.links-heading p { margin-top: .35rem; color: var(--muted); }
+.links-heading .seal { flex: none; }
+.invitation-list { display: grid; gap: .5rem; width: min(100%, 34rem); margin: 1.2rem 0; padding: 0; list-style: none; }
+.invitation-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .5rem; padding: .5rem; border: 1px solid var(--line); border-radius: .45rem; background: var(--paper); }
+.invitation-list span { padding-inline: .3rem; font-weight: 650; overflow-wrap: anywhere; }
+.invitation-list input { grid-column: 1 / -1; }
+.guest-sheet { max-width: 36rem; margin: clamp(1rem, 6vh, 4rem) auto 0; }
+.guest-panel .text-button { margin-top: .6rem; }
 .turn-top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; color: var(--muted); font-size: .9rem; }
 #turn-count { color: var(--pine); font-weight: 650; }
 .text-button { min-height: 2.5rem; border: 0; padding: .2rem 0; text-decoration: underline; text-underline-offset: .22em; }
@@ -132,11 +146,12 @@ input[aria-invalid="true"] { border-color: var(--berry); }
 .seal .icon { width: 1.6rem; height: 1.6rem; }
 .seal.revealed { color: #942e2e; border-color: #d6af9c; background: #f4e4d7; outline-color: #d9b7a4; }
 .turn-label { font-size: .91rem; font-weight: 650; color: var(--muted); }
-.slip h2, .done-panel h2 { max-width: 100%; margin-top: .18rem; overflow-wrap: anywhere; color: var(--pine); font-size: clamp(2rem, 4vw, 2.8rem); letter-spacing: -.035em; }
-.slip.revealed h2 { color: var(--berry); font-style: italic; }
+.slip :is(h1, h2), .done-panel h2 { max-width: 100%; margin-top: .18rem; overflow-wrap: anywhere; color: var(--pine); font-size: clamp(2rem, 4vw, 2.8rem); letter-spacing: -.035em; }
+.slip.revealed :is(h1, h2) { color: var(--berry); font-style: italic; }
 .turn-hint, .done-panel p, dialog p { margin-top: .55rem; color: var(--muted); }
 .slip .btn, .done-panel .btn { margin-top: 1.2rem; }
 .done-panel { padding: 2.45rem 1.3rem; }
+.done-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 0 .6rem; }
 .no-script { margin: 1rem 2rem; color: var(--berry); }
 dialog { max-width: min(29rem, calc(100% - 2rem)); max-height: calc(100% - 2rem); overflow: auto; padding: 0; color: var(--ink); background: var(--sheet); border: 1px solid var(--line); border-radius: .78rem; box-shadow: 0 16px 76px #152c223c; }
 dialog::backdrop { background: #162a22a6; }
@@ -157,7 +172,7 @@ dialog::backdrop { background: #162a22a6; }
   .hero-art { width: min(100%, 18rem); padding: .5rem .85rem; }
   .postmark { width: 6.2rem; }
   .spark.one { left: -.65rem; }
-  .steps, .turn-panel { padding-inline: 1.4rem; }
+  .steps, .turn-panel, .links-panel, .guest-panel { padding-inline: 1.4rem; }
   .setup-grid { padding: 1.55rem 1.4rem 1.2rem; column-gap: 1.35rem; }
 }
 @media (max-width: 40rem) {
@@ -189,7 +204,7 @@ dialog::backdrop { background: #162a22a6; }
   .setup-bottom .btn { width: 100%; }
   .privacy { font-size: .84rem; }
   .end-mark { padding: 1.1rem 0; }
-  .turn-panel { padding: .8rem 1rem 1rem; }
+  .turn-panel, .links-panel, .guest-panel { padding: .8rem 1rem 1rem; }
   .dialog-inner { padding: 1.45rem; }
 }
 @media (max-width: 22rem) {
